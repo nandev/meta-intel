@@ -41,17 +41,19 @@ EXTRA_OECMAKE += " \
                   -DENABLE_GNA=0 \
                   -DPYTHON_EXECUTABLE=${PYTHON} \
                   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-                  -DTHREADING=TBB -DTBB_DIR=${STAGING_LIBDIR}/cmake/TBB \
+                  -DTHREADING=SEQ\
                   -DENABLE_SAMPLES=1 \
                   -DIE_CPACK_IE_DIR=${prefix} \
                   -DNGRAPH_UNIT_TEST_ENABLE=FALSE \
                   -DNGRAPH_TEST_UTIL_ENABLE=FALSE \
-                  -DNGRAPH_ONNX_IMPORT_ENABLE=OFF \
                   -DNGRAPH_JSON_ENABLE=FALSE \
                   -DTREAT_WARNING_AS_ERROR=FALSE \
                   -DENABLE_SPEECH_DEMO=FALSE \
                   -DENABLE_DATA=FALSE \
                   -DUSE_SYSTEM_PUGIXML=TRUE \
+                  -DENABLE_MKL_DNN=OFF \
+                  -DENABLE_CLDNN=OFF \
+                  -DENABLE_SSE42=OFF \
                   "
 
 DEPENDS += "libusb1 \
@@ -60,14 +62,15 @@ DEPENDS += "libusb1 \
             pugixml \
             protobuf-native \
             tbb \
+            ffmpeg \
             "
 
-COMPATIBLE_HOST = '(x86_64).*-linux'
+COMPATIBLE_HOST = 'arm-poky-linux-gnueabi"'
 COMPATIBLE_HOST_libc-musl = "null"
 
-PACKAGECONFIG ?= "vpu opencl"
+PACKAGECONFIG ?= "vpu python3"
 PACKAGECONFIG[opencl] = "-DENABLE_CLDNN=1 -DCLDNN__IOCL_ICD_INCDIRS=${STAGING_INCDIR} -DCLDNN__IOCL_ICD_STLDIRS=${STAGING_LIBDIR} -DCLDNN__IOCL_ICD_SHLDIRS=${STAGING_LIBDIR}, -DENABLE_CLDNN=0, ocl-icd opencl-headers libva, intel-compute-runtime"
-PACKAGECONFIG[python3] = "-DENABLE_PYTHON=ON -DPYTHON_LIBRARY=${PYTHON_LIBRARY} -DPYTHON_INCLUDE_DIR=${PYTHON_INCLUDE_DIR}, -DENABLE_PYTHON=OFF, python3-cython-native, python3 python3-numpy python3-opencv python3-progress python3-cython"
+PACKAGECONFIG[python3] = "-DENABLE_PYTHON=ON -DPYTHON_LIBRARY=${PYTHON_LIBRARY} -DPYTHON_INCLUDE_DIR=${PYTHON_INCLUDE_DIR} -DNGRAPH_ONNX_IMPORT_ENABLE=ON -DNGRAPH_PYTHON_BUILD_ENABLE=ON, -DENABLE_PYTHON=OFF -DNGRAPH_ONNX_IMPORT_ENABLE=OFF -DNGRAPH_PYTHON_BUILD_ENABLE=OFF, python3-cython-native, python3 python3-numpy python3-opencv python3-progress python3-cython"
 PACKAGECONFIG[vpu] = "-DENABLE_VPU=ON -DVPU_FIRMWARE_USB-MA2X8X_FILE=../mvnc/usb-ma2x8x.mvcmd -DVPU_FIRMWARE_PCIE-MA2X8X_FILE=../mvnc/pcie-ma2x8x.mvcmd,-DENABLE_VPU=OFF,,${PN}-vpu-firmware"
 PACKAGECONFIG[verbose] = "-DVERBOSE_BUILD=1,-DVERBOSE_BUILD=0"
 
@@ -88,8 +91,6 @@ do_install_append() {
 
         rm -rf ${D}${prefix}/python
     fi
-
-    rm -rf ${D}${prefix}/deployment_tools
 
     # Remove the samples source directory. We install the built samples.
     rm -rf ${D}/usr/samples
